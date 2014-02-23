@@ -242,6 +242,31 @@ typedef enum {
     MODE_CCM_8      /* AEAD_AES_{128,256}_CCM with 8 byte auth tag */
 } ssl_cipher_mode_t;
 
+/* SSL key exchange modes */
+typedef enum {
+    KEX_NULL,
+    KEX_DH_anon,
+    KEX_DH_DSS,
+    KEX_DH_RSA,
+    KEX_DHE_DSS,
+    KEX_DHE_PSK,
+    KEX_DHE_RSA,
+    KEX_ECDH_anon,
+    KEX_ECDH_ECDSA,
+    KEX_ECDH_RSA,
+    KEX_ECDHE_ECDSA,
+    KEX_ECDHE_PSK,
+    KEX_ECDHE_RSA,
+    KEX_KRB5,
+    KEX_PSK,
+    KEX_PSK_DHE,
+    KEX_RSA,
+    KEX_RSA_PSK,
+    KEX_SRP_SHA,
+    KEX_SRP_SHA_DSS,
+    KEX_SRP_SHA_RSA,
+} ssl_kex_mode_t;
+
 /* Explicit nonce length */
 #define SSL_EX_NONCE_LEN_GCM    8 /* RFC 5288 - section 3 */
 
@@ -251,7 +276,7 @@ typedef enum {
 
 typedef struct _SslCipherSuite {
     gint number;
-    gint kex;
+    ssl_kex_mode_t kex;
     gint enc;
     gint block; /* IV block size */
     gint bits;
@@ -280,12 +305,6 @@ typedef struct _SslDecoder {
     guint16 epoch;
     SslFlow *flow;
 } SslDecoder;
-
-#define KEX_RSA         0x10
-#define KEX_DH          0x11
-#define KEX_PSK         0x12
-#define KEX_ECDH        0x13
-#define KEX_RSA_PSK     0x14
 
 #define ENC_DES         0x30
 #define ENC_3DES        0x31
