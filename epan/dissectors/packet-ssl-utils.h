@@ -332,12 +332,6 @@ typedef struct _SslDecoder {
     SslFlow *flow;
 } SslDecoder;
 
-#define KEX_RSA         0x10
-#define KEX_DH          0x11
-#define KEX_PSK         0x12
-#define KEX_ECDH        0x13
-#define KEX_RSA_PSK     0x14
-
 typedef struct {
     const gchar *name;
     gint len;

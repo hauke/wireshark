@@ -2033,13 +2033,13 @@ dissect_ssl3_handshake(tvbuff_t *tvb, packet_info *pinfo,
 
             case SSL_HND_SERVER_KEY_EXCHG: {
                 switch (ssl_get_keyex_alg(conv_cipher)) {
-                case KEX_DH:
+                case KEX_DH_RSA:
                     dissect_ssl3_hnd_srv_keyex_dh(tvb, ssl_hand_tree, offset, length);
                     break;
                 case KEX_RSA:
                     dissect_ssl3_hnd_srv_keyex_rsa(tvb, ssl_hand_tree, offset, length, conv_version);
                     break;
-                case KEX_ECDH:
+                case KEX_ECDH_RSA:
                     dissect_ssl3_hnd_srv_keyex_ecdh(tvb, ssl_hand_tree, offset, length, conv_version);
                     break;
                 case KEX_RSA_PSK:
@@ -2066,13 +2066,13 @@ dissect_ssl3_handshake(tvbuff_t *tvb, packet_info *pinfo,
 
             case SSL_HND_CLIENT_KEY_EXCHG:
                 switch (ssl_get_keyex_alg(conv_cipher)) {
-                case KEX_DH:
+                case KEX_DH_RSA:
                         dissect_ssl3_hnd_cli_keyex_dh(tvb, ssl_hand_tree, offset, length);
                         break;
                 case KEX_RSA:
                         dissect_ssl3_hnd_cli_keyex_rsa(tvb, ssl_hand_tree, offset, length);
                         break;
-                case KEX_ECDH:
+                case KEX_ECDH_RSA:
                         dissect_ssl3_hnd_cli_keyex_ecdh(tvb, ssl_hand_tree, offset, length);
                         break;
                 case KEX_PSK:
