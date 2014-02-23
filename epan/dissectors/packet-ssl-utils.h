@@ -267,6 +267,32 @@ typedef enum {
     KEX_SRP_SHA_RSA,
 } ssl_kex_mode_t;
 
+/* SSL key exchange modes */
+typedef enum {
+    ENC_DES,
+    ENC_3DES,
+    ENC_RC4,
+    ENC_RC2,
+    ENC_IDEA,
+    ENC_AES,
+    ENC_AES256,
+    ENC_CAMELLIA128,
+    ENC_CAMELLIA256,
+    ENC_ARIA128,
+    ENC_ARIA256,
+    ENC_SEED,
+    ENC_NULL,
+} ssl_enc_mode_t;
+
+/* SSL key exchange modes */
+typedef enum {
+    DIG_MD5,
+    DIG_SHA,
+    DIG_SHA256,
+    DIG_SHA384,
+    DIG_NA      /* Not Applicable */
+} ssl_dig_mode_t;
+
 /* Explicit nonce length */
 #define SSL_EX_NONCE_LEN_GCM    8 /* RFC 5288 - section 3 */
 
@@ -277,11 +303,11 @@ typedef enum {
 typedef struct _SslCipherSuite {
     gint number;
     ssl_kex_mode_t kex;
-    gint enc;
+    ssl_enc_mode_t enc;
     gint block; /* IV block size */
     gint bits;
     gint eff_bits;
-    gint dig;
+    ssl_dig_mode_t dig;
     ssl_cipher_mode_t mode;
 } SslCipherSuite;
 
@@ -306,23 +332,11 @@ typedef struct _SslDecoder {
     SslFlow *flow;
 } SslDecoder;
 
-#define ENC_DES         0x30
-#define ENC_3DES        0x31
-#define ENC_RC4         0x32
-#define ENC_RC2         0x33
-#define ENC_IDEA        0x34
-#define ENC_AES         0x35
-#define ENC_AES256      0x36
-#define ENC_CAMELLIA128 0x37
-#define ENC_CAMELLIA256 0x38
-#define ENC_SEED        0x39
-#define ENC_NULL        0x3A
-
-#define DIG_MD5         0x40
-#define DIG_SHA         0x41
-#define DIG_SHA256      0x42
-#define DIG_SHA384      0x43
-#define DIG_NA          0x44 /* Not Applicable */
+#define KEX_RSA         0x10
+#define KEX_DH          0x11
+#define KEX_PSK         0x12
+#define KEX_ECDH        0x13
+#define KEX_RSA_PSK     0x14
 
 typedef struct {
     const gchar *name;

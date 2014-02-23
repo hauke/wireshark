@@ -1788,7 +1788,7 @@ static const SslDigestAlgo digests[]={
 /* get index digest index */
 static const SslDigestAlgo *
 ssl_cipher_suite_dig(SslCipherSuite *cs) {
-    return &digests[cs->dig - DIG_MD5];
+    return &digests[cs->dig];
 }
 
 static const gchar *ciphers[]={
@@ -1801,6 +1801,8 @@ static const gchar *ciphers[]={
     "AES256",
     "CAMELLIA128",
     "CAMELLIA256",
+    "ARIA128"
+    "ARIA256"
     "SEED",
     "*UNKNOWN*"
 };
@@ -2289,15 +2291,15 @@ ssl_create_decoder(SslCipherSuite *cipher_suite, gint compression,
     dec = (SslDecoder *)wmem_alloc0(wmem_file_scope(), sizeof(SslDecoder));
     /* Find the SSLeay cipher */
     if(cipher_suite->enc!=ENC_NULL) {
-        ssl_debug_printf("ssl_create_decoder CIPHER: %s\n", ciphers[cipher_suite->enc-0x30]);
-        ciph=ssl_get_cipher_by_name(ciphers[cipher_suite->enc-0x30]);
+        ssl_debug_printf("ssl_create_decoder CIPHER: %s\n", ciphers[cipher_suite->enc]);
+        ciph=ssl_get_cipher_by_name(ciphers[cipher_suite->enc]);
     } else {
         ssl_debug_printf("ssl_create_decoder CIPHER: %s\n", "NULL");
         ciph = -1;
     }
     if (ciph == 0) {
         ssl_debug_printf("ssl_create_decoder can't find cipher %s\n",
-            ciphers[cipher_suite->enc > ENC_NULL ? ENC_NULL-0x30 : (cipher_suite->enc-0x30)]);
+            ciphers[cipher_suite->enc > ENC_NULL ? ENC_NULL : (cipher_suite->enc)]);
         return NULL;
     }
 
