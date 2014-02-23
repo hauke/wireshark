@@ -259,7 +259,6 @@ typedef enum {
     KEX_ECDHE_RSA,
     KEX_KRB5,
     KEX_PSK,
-    KEX_PSK_DHE,
     KEX_RSA,
     KEX_RSA_PSK,
     KEX_SRP_SHA,
@@ -425,8 +424,6 @@ typedef struct _ssldecrypt_assoc_t {
     char* keyfile;
     char* password;
 } ssldecrypt_assoc_t;
-
-gint ssl_get_keyex_alg(gint cipher);
 
 gboolean ssldecrypt_uat_fld_ip_chk_cb(void*, const char*, unsigned, const void*, const void*, const char** err);
 gboolean ssldecrypt_uat_fld_port_chk_cb(void*, const char*, unsigned, const void*, const void*, const char** err);

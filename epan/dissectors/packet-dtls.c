@@ -338,7 +338,7 @@ dtls_parse_old_keys(void)
 /* record layer dissector */
 static gint dissect_dtls_record(tvbuff_t *tvb, packet_info *pinfo,
                                 proto_tree *tree, guint32 offset,
-                                guint *conv_version, guint conv_cipher,
+                                guint *conv_version,
                                 SslDecryptSession *conv_data);
 
 /* change cipher spec dissector */
@@ -356,7 +356,7 @@ static void dissect_dtls_alert(tvbuff_t *tvb, packet_info *pinfo,
 static void dissect_dtls_handshake(tvbuff_t *tvb, packet_info *pinfo,
                                    proto_tree *tree, guint32 offset,
                                    guint32 record_length,
-                                   guint *conv_version, guint conv_cipher,
+                                   guint *conv_version,
                                    SslDecryptSession *conv_data, guint8 content_type);
 
 /* heartbeat message dissector */
@@ -468,7 +468,6 @@ dissect_dtls(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree)
   gboolean           first_record_in_frame;
   SslDecryptSession *ssl_session;
   guint*             conv_version;
-  guint              conv_cipher;
   Ssl_private_key_t *private_key;
 
   ti                    = NULL;
@@ -528,7 +527,6 @@ dissect_dtls(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree)
     }
   }
   conv_version= & ssl_session->version;
-  conv_cipher  =  ssl_session->cipher;
 
   /* try decryption only the first time we see this packet
    * (to keep cipher synchronized) */
@@ -565,12 +563,12 @@ dissect_dtls(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree)
       case SSL_VER_DTLS:
       case SSL_VER_DTLS_OPENSSL:
         offset = dissect_dtls_record(tvb, pinfo, dtls_tree,
-                                     offset, conv_version, conv_cipher,
+                                     offset, conv_version,
                                      ssl_session);
         break;
       case SSL_VER_DTLS1DOT2:
         offset = dissect_dtls_record(tvb, pinfo, dtls_tree,
-                                     offset, conv_version, conv_cipher,
+                                     offset, conv_version,
                                      ssl_session);
         break;
 
@@ -582,7 +580,7 @@ dissect_dtls(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree)
           {
             /* looks like dtls */
             offset = dissect_dtls_record(tvb, pinfo, dtls_tree,
-                                         offset, conv_version, conv_cipher,
+                                         offset, conv_version,
                                          ssl_session);
           }
         else
@@ -780,7 +778,7 @@ decrypt_dtls_record(tvbuff_t *tvb, packet_info *pinfo, guint32 offset,
 static gint
 dissect_dtls_record(tvbuff_t *tvb, packet_info *pinfo,
                     proto_tree *tree, guint32 offset,
-                    guint *conv_version, guint conv_cipher,
+                    guint *conv_version,
                     SslDecryptSession* ssl)
 {
 
@@ -984,11 +982,11 @@ dissect_dtls_record(tvbuff_t *tvb, packet_info *pinfo,
       decrypted = ssl_get_record_info(tvb, proto_dtls, pinfo, offset);
       if (decrypted) {
         dissect_dtls_handshake(decrypted, pinfo, dtls_record_tree, 0,
-                               tvb_length(decrypted), conv_version, conv_cipher, ssl, content_type);
+                               tvb_length(decrypted), conv_version, ssl, content_type);
         add_new_data_source(pinfo, decrypted, "Decrypted SSL record");
       } else {
         dissect_dtls_handshake(tvb, pinfo, dtls_record_tree, offset,
-                               record_length, conv_version, conv_cipher, ssl, content_type);
+                               record_length, conv_version, ssl, content_type);
       }
       break;
     }
@@ -1191,7 +1189,7 @@ dissect_dtls_alert(tvbuff_t *tvb, packet_info *pinfo,
 static void
 dissect_dtls_handshake(tvbuff_t *tvb, packet_info *pinfo,
                        proto_tree *tree, guint32 offset,
-                       guint32 record_length, guint *conv_version, guint conv_cipher,
+                       guint32 record_length, guint *conv_version,
                        SslDecryptSession* ssl, guint8 content_type)
 {
   /*     struct {
@@ -1489,21 +1487,36 @@ dissect_dtls_handshake(tvbuff_t *tvb, packet_info *pinfo,
             break;
 
           case SSL_HND_SERVER_KEY_EXCHG:
-            switch (ssl_get_keyex_alg(conv_cipher)) {
-            case KEX_DH_RSA:
+            switch (ssl->cipher_suite.kex) {
+            case KEX_DH_anon:
+            /* TODO: This looks a little different */
+            case KEX_DHE_DSS:
+            case KEX_DHE_RSA:
                 dissect_dtls_hnd_srv_keyex_dh(tvb, ssl_hand_tree, offset, length);
                 break;
-            case KEX_RSA:
-                dissect_dtls_hnd_srv_keyex_rsa(tvb, ssl_hand_tree, offset, length, conv_version);
-                break;
-            case KEX_ECDH_RSA:
-                dissect_dtls_hnd_srv_keyex_ecdh(tvb, ssl_hand_tree, offset, length, conv_version);
+            case KEX_DHE_PSK:
+                dissect_dtls_hnd_srv_keyex_psk(tvb, ssl_hand_tree, offset, length);
+                dissect_dtls_hnd_srv_keyex_dh(tvb, ssl_hand_tree, offset, length);
                 break;
             case KEX_RSA_PSK:
+                dissect_dtls_hnd_srv_keyex_rsa(tvb, ssl_hand_tree, offset, length, conv_version);
+                break;
+            case KEX_ECDH_anon:
+            case KEX_ECDH_ECDSA:
+            case KEX_ECDH_RSA:
+            case KEX_ECDHE_ECDSA:
+            case KEX_ECDHE_PSK:
+            case KEX_ECDHE_RSA:
+                dissect_dtls_hnd_srv_keyex_ecdh(tvb, ssl_hand_tree, offset, length, conv_version);
+                break;
             case KEX_PSK:
                 dissect_dtls_hnd_srv_keyex_psk(tvb, ssl_hand_tree, offset, length);
                 break;
+            case KEX_RSA:
+            case KEX_DH_DSS:
+            case KEX_DH_RSA:
             default:
+                /* this should not happen */
                 break;
             }
             break;
@@ -1521,14 +1534,27 @@ dissect_dtls_handshake(tvbuff_t *tvb, packet_info *pinfo,
             break;
 
           case SSL_HND_CLIENT_KEY_EXCHG:
-            switch (ssl_get_keyex_alg(conv_cipher)) {
+            switch (ssl->cipher_suite.kex) {
+            case KEX_DHE_DSS:
+            case KEX_DHE_RSA:
+            case KEX_DH_DSS:
             case KEX_DH_RSA:
+            case KEX_DH_anon:
+                    dissect_dtls_hnd_cli_keyex_dh(tvb, ssl_hand_tree, offset, length);
+                    break;
+            case KEX_DHE_PSK:
+                    dissect_dtls_hnd_cli_keyex_psk(tvb, ssl_hand_tree, offset, length);
                     dissect_dtls_hnd_cli_keyex_dh(tvb, ssl_hand_tree, offset, length);
                     break;
             case KEX_RSA:
                     dissect_dtls_hnd_cli_keyex_rsa(tvb, ssl_hand_tree, offset, length);
                     break;
+            case KEX_ECDH_anon:
+            case KEX_ECDH_ECDSA:
             case KEX_ECDH_RSA:
+            case KEX_ECDHE_ECDSA:
+            case KEX_ECDHE_PSK:
+            case KEX_ECDHE_RSA:
                     dissect_dtls_hnd_cli_keyex_ecdh(tvb, ssl_hand_tree, offset, length);
                     break;
             case KEX_PSK:
