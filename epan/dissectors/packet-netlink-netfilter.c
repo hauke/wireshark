@@ -138,6 +138,34 @@ enum ws_nfqnl_msg_types {
 	WS_NFQNL_MSG_VERDICT_BATCH  = 3
 };
 
+enum nf_tables_msg_types {
+	NFT_MSG_NEWTABLE,
+	NFT_MSG_GETTABLE,
+	NFT_MSG_DELTABLE,
+	NFT_MSG_NEWCHAIN,
+	NFT_MSG_GETCHAIN,
+	NFT_MSG_DELCHAIN,
+	NFT_MSG_NEWRULE,
+	NFT_MSG_GETRULE,
+	NFT_MSG_DELRULE,
+	NFT_MSG_NEWSET,
+	NFT_MSG_GETSET,
+	NFT_MSG_DELSET,
+	NFT_MSG_NEWSETELEM,
+	NFT_MSG_GETSETELEM,
+	NFT_MSG_DELSETELEM,
+	NFT_MSG_NEWGEN,
+	NFT_MSG_GETGEN,
+	NFT_MSG_TRACE,
+	NFT_MSG_NEWOBJ,
+	NFT_MSG_GETOBJ,
+	NFT_MSG_DELOBJ,
+	NFT_MSG_GETOBJ_RESET,
+	NFT_MSG_NEWFLOWTABLE,
+	NFT_MSG_GETFLOWTABLE,
+	NFT_MSG_DELFLOWTABLE,
+};
+
 enum ws_nfqnl_attr_type {
 	WS_NFQA_UNSPEC              = 0,
 	WS_NFQA_PACKET_HDR          = 1,
@@ -1026,6 +1054,35 @@ static const value_string nfq_type_vals[] = {
 	{ 0, NULL }
 };
 
+static const value_string nft_type_vals[] = {
+	{ NFT_MSG_NEWTABLE, "NFT_MSG_NEWTABLE" },
+	{ NFT_MSG_GETTABLE, "NFT_MSG_GETTABLE" },
+	{ NFT_MSG_DELTABLE, "NFT_MSG_DELTABLE" },
+	{ NFT_MSG_NEWCHAIN, "NFT_MSG_NEWCHAIN" },
+	{ NFT_MSG_GETCHAIN, "NFT_MSG_GETCHAIN" },
+	{ NFT_MSG_DELCHAIN, "NFT_MSG_DELCHAIN" },
+	{ NFT_MSG_NEWRULE, "NFT_MSG_NEWRULE" },
+	{ NFT_MSG_GETRULE, "NFT_MSG_GETRULE" },
+	{ NFT_MSG_DELRULE, "NFT_MSG_DELRULE" },
+	{ NFT_MSG_NEWSET, "NFT_MSG_NEWSET" },
+	{ NFT_MSG_GETSET, "NFT_MSG_GETSET" },
+	{ NFT_MSG_DELSET, "NFT_MSG_DELSET" },
+	{ NFT_MSG_NEWSETELEM, "NFT_MSG_NEWSETELEM" },
+	{ NFT_MSG_GETSETELEM, "NFT_MSG_GETSETELEM" },
+	{ NFT_MSG_DELSETELEM, "NFT_MSG_DELSETELEM" },
+	{ NFT_MSG_NEWGEN, "NFT_MSG_NEWGEN" },
+	{ NFT_MSG_GETGEN, "NFT_MSG_GETGEN" },
+	{ NFT_MSG_TRACE, "NFT_MSG_TRACE" },
+	{ NFT_MSG_NEWOBJ, "NFT_MSG_NEWOBJ" },
+	{ NFT_MSG_GETOBJ, "NFT_MSG_GETOBJ" },
+	{ NFT_MSG_DELOBJ, "NFT_MSG_DELOBJ" },
+	{ NFT_MSG_GETOBJ_RESET, "NFT_MSG_GETOBJ_RESET" },
+	{ NFT_MSG_NEWFLOWTABLE, "NFT_MSG_NEWFLOWTABLE" },
+	{ NFT_MSG_GETFLOWTABLE, "NFT_MSG_GETFLOWTABLE" },
+	{ NFT_MSG_DELFLOWTABLE, "NFT_MSG_DELFLOWTABLE" },
+	{ 0, NULL }
+};
+
 static const value_string nfq_config_command_vals[] = {
 	{ WS_NFQNL_CFG_CMD_NONE,        "None" },
 	{ WS_NFQNL_CFG_CMD_BIND,        "Bind" },
@@ -1855,6 +1912,11 @@ static header_field_info hfi_nfq_type NETLINK_NETFILTER_HFI_INIT =
 	{ "Type", "netlink-netfilter.queue_type", FT_UINT16, BASE_DEC,
 	  VALS(nfq_type_vals), 0x00FF, NULL, HFILL };
 
+static header_field_info hfi_nft_type NETLINK_NETFILTER_HFI_INIT =
+	{ "Type", "netlink-netfilter.tables", FT_UINT16, BASE_DEC,
+	  VALS(nft_type_vals), 0x00FF, NULL, HFILL };
+
+
 static header_field_info hfi_ipset_command NETLINK_NETFILTER_HFI_INIT =
 	{ "Command", "netlink-netfilter.ipset_command", FT_UINT16, BASE_DEC,
 	  VALS(ipset_command_vals), 0x00FF, NULL, HFILL };
@@ -1898,6 +1960,10 @@ dissect_netlink_netfilter(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, v
 
 		case WS_NFNL_SUBSYS_IPSET:
 			proto_tree_add_item(nlmsg_tree, &hfi_ipset_command, tvb, 4, 2, nl_data->encoding);
+			break;
+
+		case WS_NFNL_SUBSYS_NFTABLES:
+			proto_tree_add_item(nlmsg_tree, &hfi_nft_type, tvb, 4, 2, nl_data->encoding);
 			break;
 	}
 
@@ -2019,6 +2085,7 @@ proto_register_netlink_netfilter(void)
 		&hfi_nfq_caplen,
 		&hfi_nfq_uid,
 		&hfi_nfq_gid,
+		&hfi_nft_type,
 	/* ULOG */
 		&hfi_netlink_netfilter_ulog_type,
 	/* IPSET */
