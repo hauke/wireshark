@@ -166,6 +166,23 @@ enum nf_tables_msg_types {
 	NFT_MSG_DELFLOWTABLE,
 };
 
+enum nft_chain_attributes {
+	NFTA_CHAIN_UNSPEC,
+	NFTA_CHAIN_TABLE,
+	NFTA_CHAIN_HANDLE,
+	NFTA_CHAIN_NAME,
+	NFTA_CHAIN_HOOK,
+	NFTA_CHAIN_POLICY,
+	NFTA_CHAIN_USE,
+	NFTA_CHAIN_TYPE,
+	NFTA_CHAIN_COUNTERS,
+	NFTA_CHAIN_PAD,
+	NFTA_CHAIN_FLAGS,
+	NFTA_CHAIN_ID,
+	NFTA_CHAIN_USERDATA,
+	__NFTA_CHAIN_MAX
+};
+
 enum ws_nfqnl_attr_type {
 	WS_NFQA_UNSPEC              = 0,
 	WS_NFQA_PACKET_HDR          = 1,
@@ -410,6 +427,7 @@ static int ett_nfct_tuple_ip_attr = -1;
 static int ett_nfct_tuple_proto_attr = -1;
 static int ett_nfq_config_attr = -1;
 static int ett_nfq_attr = -1;
+static int ett_nft_attr = -1;
 static int ett_nfexp_attr = -1;
 static int ett_nfexp_flags_attr = -1;
 static int ett_nfexp_nat_attr = -1;
@@ -1513,6 +1531,140 @@ dissect_netfilter_queue(tvbuff_t *tvb, netlink_netfilter_info_t *info, struct pa
 	return offset;
 }
 
+static const value_string netlink_netfilter_table_chain_type_vals[] = {
+	{ NFTA_CHAIN_TABLE, "table" },
+	{ NFTA_CHAIN_HANDLE, "handle" },
+	{ NFTA_CHAIN_NAME, "name" },
+	{ NFTA_CHAIN_HOOK, "hook" },
+	{ NFTA_CHAIN_POLICY, "policy" },
+	{ NFTA_CHAIN_TYPE, "type" },
+	{ NFTA_CHAIN_COUNTERS, "counters" },
+	{ NFTA_CHAIN_FLAGS, "flags" },
+	{ NFTA_CHAIN_ID, "id" },
+	{ NFTA_CHAIN_USERDATA, "userdata" },
+	{ 0, NULL }
+};
+
+static header_field_info hfi_nft_chain_attr NETLINK_NETFILTER_HFI_INIT =
+	{ "Chain", "netlink-netfilter.nft.chain", FT_UINT16, BASE_DEC,
+	   VALS(netlink_netfilter_table_chain_type_vals), NLA_TYPE_MASK, NULL, HFILL };
+
+static header_field_info hfi_nft_chain_attr_table NETLINK_NETFILTER_HFI_INIT =
+	{ "Table", "netlink-netfilter.nft.chain.table", FT_STRINGZ, STR_UNICODE,
+	  NULL, 0x00, NULL, HFILL };
+
+static header_field_info hfi_nft_chain_attr_handle NETLINK_NETFILTER_HFI_INIT =
+	{ "Handle", "netlink-netfilter.nft.chain.handle", FT_UINT64, BASE_HEX,
+	  NULL, 0x00, NULL, HFILL };
+
+static header_field_info hfi_nft_chain_attr_name NETLINK_NETFILTER_HFI_INIT =
+	{ "Name", "netlink-netfilter.nft.chain.name", FT_STRINGZ, STR_UNICODE,
+	  NULL, 0x00, NULL, HFILL };
+
+// Is actually nested
+static header_field_info hfi_nft_chain_attr_hook NETLINK_NETFILTER_HFI_INIT =
+	{ "Hook", "netlink-netfilter.nft.chain.hook", FT_BYTES, BASE_NONE,
+	  NULL, 0x00, NULL, HFILL };
+
+static header_field_info hfi_nft_chain_attr_type NETLINK_NETFILTER_HFI_INIT =
+	{ "Type", "netlink-netfilter.nft.chain.type", FT_STRINGZ, STR_UNICODE,
+	  NULL, 0x00, NULL, HFILL };
+
+static header_field_info hfi_nft_chain_attr_policy NETLINK_NETFILTER_HFI_INIT =
+	{ "Policy", "netlink-netfilter.nft.chain.policy", FT_UINT32, BASE_HEX,
+	  NULL, 0x00, NULL, HFILL };
+
+// Is actually nested
+static header_field_info hfi_nft_chain_attr_counters NETLINK_NETFILTER_HFI_INIT =
+	{ "Counters", "netlink-netfilter.nft.chain.counters", FT_BYTES, BASE_NONE,
+	  NULL, 0x00, NULL, HFILL };
+
+static header_field_info hfi_nft_chain_attr_flags NETLINK_NETFILTER_HFI_INIT =
+	{ "Flags", "netlink-netfilter.nft.chain.flags", FT_UINT32, BASE_HEX,
+	  NULL, 0x00, NULL, HFILL };
+
+static header_field_info hfi_nft_chain_attr_id NETLINK_NETFILTER_HFI_INIT =
+	{ "ID", "netlink-netfilter.nft.chain.id", FT_UINT32, BASE_HEX,
+	  NULL, 0x00, NULL, HFILL };
+
+static header_field_info hfi_nft_chain_attr_userdata NETLINK_NETFILTER_HFI_INIT =
+	{ "User Data", "netlink-netfilter.nft.chain.userdata", FT_BYTES, BASE_NONE,
+	  NULL, 0x00, NULL, HFILL };
+
+static int
+dissect_nft_chain_attrs(tvbuff_t *tvb, void *data _U_, struct packet_netlink_data *nl_data, proto_tree *tree, int nla_type, int offset, int len)
+{
+	enum nft_chain_attributes type = (enum nft_chain_attributes) nla_type;
+
+	(void)nl_data;
+	switch (type) {
+		case NFTA_CHAIN_UNSPEC:
+			break;
+		case NFTA_CHAIN_TABLE:
+			proto_tree_add_item(tree, &hfi_nft_chain_attr_table, tvb, offset, len, ENC_UTF_8);
+			break;
+		case NFTA_CHAIN_HANDLE:
+			proto_tree_add_item(tree, &hfi_nft_chain_attr_handle, tvb, offset, len, ENC_BIG_ENDIAN);
+			break;
+		case NFTA_CHAIN_NAME:
+			proto_tree_add_item(tree, &hfi_nft_chain_attr_name, tvb, offset, len, ENC_UTF_8);
+			break;
+		case NFTA_CHAIN_HOOK:
+			proto_tree_add_item(tree, &hfi_nft_chain_attr_hook, tvb, offset, len, ENC_UTF_8);
+			break;
+		case NFTA_CHAIN_POLICY:
+			proto_tree_add_item(tree, &hfi_nft_chain_attr_policy, tvb, offset, len, ENC_BIG_ENDIAN);
+			break;
+		case NFTA_CHAIN_USE:
+			break;
+		case NFTA_CHAIN_TYPE:
+			proto_tree_add_item(tree, &hfi_nft_chain_attr_type, tvb, offset, len, ENC_UTF_8);
+			break;
+		case NFTA_CHAIN_COUNTERS:
+			proto_tree_add_item(tree, &hfi_nft_chain_attr_counters, tvb, offset, len, ENC_UTF_8);
+			break;
+		case NFTA_CHAIN_PAD:
+			break;
+		case NFTA_CHAIN_FLAGS:
+			proto_tree_add_item(tree, &hfi_nft_chain_attr_flags, tvb, offset, len, ENC_BIG_ENDIAN);
+			offset -= len;
+			break;
+		case NFTA_CHAIN_ID:
+			proto_tree_add_item(tree, &hfi_nft_chain_attr_id, tvb, offset, len, ENC_BIG_ENDIAN);
+			offset -= len;
+			break;
+		case NFTA_CHAIN_USERDATA:
+			proto_tree_add_item(tree, &hfi_nft_chain_attr_userdata, tvb, offset, len, ENC_UTF_8);
+			break;
+		default:
+			break;
+	}
+
+	return 0;
+}
+
+
+static int
+dissect_netfilter_nft(tvbuff_t *tvb, netlink_netfilter_info_t *info, struct packet_netlink_data *nl_data, proto_tree *tree, int offset)
+{
+	enum nf_tables_msg_types type = (enum nf_tables_msg_types) (nl_data->type & 0xff);
+
+	offset = dissect_netlink_netfilter_header(tvb, tree, offset);
+
+	switch (type) {
+		case NFT_MSG_NEWCHAIN:
+		case NFT_MSG_GETCHAIN:
+		case NFT_MSG_DELCHAIN:
+			return dissect_netlink_attributes_to_end(tvb, &hfi_nft_chain_attr, ett_nft_attr, info, nl_data, tree, offset, dissect_nft_chain_attrs);
+
+		default:
+			/* TODO */
+			break;
+	}
+	(void)info;
+	return offset;
+}
+
 /* ULOG */
 
 static const value_string netlink_netfilter_ulog_type_vals[] = {
@@ -1991,6 +2143,10 @@ dissect_netlink_netfilter(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, v
 			offset = dissect_netfilter_ipset(tvb, &info, nl_data, nlmsg_tree, offset);
 			break;
 
+		case WS_NFNL_SUBSYS_NFTABLES:
+			offset = dissect_netfilter_nft(tvb, &info, nl_data, nlmsg_tree, offset);
+			break;
+
 		default:
 			call_data_dissector(tvb_new_subset_remaining(tvb, offset), pinfo, nlmsg_tree);
 			offset = tvb_reported_length(tvb);
@@ -2086,6 +2242,18 @@ proto_register_netlink_netfilter(void)
 		&hfi_nfq_uid,
 		&hfi_nfq_gid,
 		&hfi_nft_type,
+	/* NTF */
+		&hfi_nft_chain_attr,
+		&hfi_nft_chain_attr_table,
+		&hfi_nft_chain_attr_handle,
+		&hfi_nft_chain_attr_name,
+		&hfi_nft_chain_attr_hook,
+		&hfi_nft_chain_attr_type,
+		&hfi_nft_chain_attr_policy,
+		&hfi_nft_chain_attr_counters,
+		&hfi_nft_chain_attr_flags,
+		&hfi_nft_chain_attr_id,
+		&hfi_nft_chain_attr_userdata,
 	/* ULOG */
 		&hfi_netlink_netfilter_ulog_type,
 	/* IPSET */
@@ -2118,6 +2286,7 @@ proto_register_netlink_netfilter(void)
 		&ett_nfct_tuple_proto_attr,
 		&ett_nfq_config_attr,
 		&ett_nfq_attr,
+		&ett_nft_attr,
 		&ett_nfexp_attr,
 		&ett_nfexp_flags_attr,
 		&ett_nfexp_nat_attr,
