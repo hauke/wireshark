@@ -1537,6 +1537,7 @@ static const value_string netlink_netfilter_table_chain_type_vals[] = {
 	{ NFTA_CHAIN_NAME, "name" },
 	{ NFTA_CHAIN_HOOK, "hook" },
 	{ NFTA_CHAIN_POLICY, "policy" },
+	{ NFTA_CHAIN_USE, "use" },
 	{ NFTA_CHAIN_TYPE, "type" },
 	{ NFTA_CHAIN_COUNTERS, "counters" },
 	{ NFTA_CHAIN_FLAGS, "flags" },
@@ -1572,6 +1573,10 @@ static header_field_info hfi_nft_chain_attr_type NETLINK_NETFILTER_HFI_INIT =
 
 static header_field_info hfi_nft_chain_attr_policy NETLINK_NETFILTER_HFI_INIT =
 	{ "Policy", "netlink-netfilter.nft.chain.policy", FT_UINT32, BASE_HEX,
+	  NULL, 0x00, NULL, HFILL };
+
+static header_field_info hfi_nft_chain_attr_use NETLINK_NETFILTER_HFI_INIT =
+	{ "Use", "netlink-netfilter.nft.chain.use", FT_UINT32, BASE_HEX,
 	  NULL, 0x00, NULL, HFILL };
 
 // Is actually nested
@@ -1616,6 +1621,7 @@ dissect_nft_chain_attrs(tvbuff_t *tvb, void *data _U_, struct packet_netlink_dat
 			proto_tree_add_item(tree, &hfi_nft_chain_attr_policy, tvb, offset, len, ENC_BIG_ENDIAN);
 			break;
 		case NFTA_CHAIN_USE:
+			proto_tree_add_item(tree, &hfi_nft_chain_attr_use, tvb, offset, len, ENC_BIG_ENDIAN);
 			break;
 		case NFTA_CHAIN_TYPE:
 			proto_tree_add_item(tree, &hfi_nft_chain_attr_type, tvb, offset, len, ENC_UTF_8);
@@ -2250,6 +2256,7 @@ proto_register_netlink_netfilter(void)
 		&hfi_nft_chain_attr_hook,
 		&hfi_nft_chain_attr_type,
 		&hfi_nft_chain_attr_policy,
+		&hfi_nft_chain_attr_use,
 		&hfi_nft_chain_attr_counters,
 		&hfi_nft_chain_attr_flags,
 		&hfi_nft_chain_attr_id,
