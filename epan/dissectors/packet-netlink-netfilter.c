@@ -215,6 +215,14 @@ enum nft_data_attributes {
 	__NFTA_DATA_MAX
 };
 
+enum nft_verdict_attributes {
+	NFTA_VERDICT_UNSPEC,
+	NFTA_VERDICT_CODE,
+	NFTA_VERDICT_CHAIN,
+	NFTA_VERDICT_CHAIN_ID,
+	__NFTA_VERDICT_MAX
+};
+
 enum ws_nfqnl_attr_type {
 	WS_NFQA_UNSPEC              = 0,
 	WS_NFQA_PACKET_HDR          = 1,
@@ -463,6 +471,7 @@ static int ett_nft_attr = -1;
 static int ett_nft_set_elem_attr = -1;
 static int ett_nft_set_elem_list_attr = -1;
 static int ett_nft_data_attr = -1;
+static int ett_nft_verdict_attr = -1;
 static int ett_nfexp_attr = -1;
 static int ett_nfexp_flags_attr = -1;
 static int ett_nfexp_nat_attr = -1;
@@ -1684,6 +1693,42 @@ dissect_nft_chain_attrs(tvbuff_t *tvb, void *data _U_, struct packet_netlink_dat
 	return 0;
 }
 
+
+static const value_string netlink_netfilter_table_verdict_type_vals[] = {
+	{ NFTA_VERDICT_CODE, "code" },
+	{ NFTA_VERDICT_CHAIN, "chain" },
+	{ NFTA_VERDICT_CHAIN_ID, "chain id" },
+	{ 0, NULL }
+};
+
+static header_field_info hfi_nft_set_data_verdict_attr NETLINK_NETFILTER_HFI_INIT =
+	{ "Verdict", "netlink-netfilter.nft.data.verdict", FT_UINT16, BASE_DEC,
+	   VALS(netlink_netfilter_table_verdict_type_vals), NLA_TYPE_MASK, NULL, HFILL };
+
+static int
+dissect_nft_verdict_attrs(tvbuff_t *tvb, void *data _U_, struct packet_netlink_data *nl_data, proto_tree *tree, int nla_type, int offset, int len)
+{
+	enum nft_verdict_attributes type = (enum nft_verdict_attributes) nla_type;
+
+	(void)tvb;
+	(void)data;
+	(void)tree;
+	(void)nl_data;
+	(void)offset;
+	(void)len;
+
+	switch (type) {
+		case NFTA_VERDICT_CODE:
+		case NFTA_VERDICT_CHAIN:
+		case NFTA_VERDICT_CHAIN_ID:
+			break;
+		default:
+			break;
+	}
+	return 0;
+}
+
+
 static const value_string netlink_netfilter_table_data_type_vals[] = {
 	{ NFTA_DATA_VALUE, "value" },
 	{ NFTA_DATA_VERDICT, "verdict" },
@@ -1698,18 +1743,13 @@ static int
 dissect_nft_data_attrs(tvbuff_t *tvb, void *data _U_, struct packet_netlink_data *nl_data, proto_tree *tree, int nla_type, int offset, int len)
 {
 	enum nft_data_attributes type = (enum nft_data_attributes) nla_type;
-
-	(void)tvb;
-	(void)data;
-	(void)tree;
-	(void)nl_data;
-	(void)offset;
-	(void)len;
+	netlink_netfilter_info_t *info = (netlink_netfilter_info_t *) data;
 
 	switch (type) {
 		case NFTA_DATA_VALUE:
-		case NFTA_DATA_VERDICT:
 			break;
+		case NFTA_DATA_VERDICT:
+			return dissect_netlink_attributes(tvb, &hfi_nft_set_data_verdict_attr, ett_nft_verdict_attr, info, nl_data, tree, offset, len, dissect_nft_verdict_attrs);
 		default:
 			break;
 	}
@@ -2410,6 +2450,7 @@ proto_register_netlink_netfilter(void)
 		&hfi_nft_set_elem_attr,
 		&hfi_nft_set_elem_list_attr,
 		&hfi_nft_set_elem_key_attr,
+		&hfi_nft_set_data_verdict_attr,
 	/* ULOG */
 		&hfi_netlink_netfilter_ulog_type,
 	/* IPSET */
@@ -2446,6 +2487,7 @@ proto_register_netlink_netfilter(void)
 		&ett_nft_set_elem_attr,
 		&ett_nft_set_elem_list_attr,
 		&ett_nft_data_attr,
+		&ett_nft_verdict_attr,
 		&ett_nfexp_attr,
 		&ett_nfexp_flags_attr,
 		&ett_nfexp_nat_attr,
