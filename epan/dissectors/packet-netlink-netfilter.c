@@ -199,6 +199,15 @@ enum nft_set_elem_attributes {
 	__NFTA_SET_ELEM_MAX
 };
 
+enum nft_set_elem_list_attributes {
+	NFTA_SET_ELEM_LIST_UNSPEC,
+	NFTA_SET_ELEM_LIST_TABLE,
+	NFTA_SET_ELEM_LIST_SET,
+	NFTA_SET_ELEM_LIST_ELEMENTS,
+	NFTA_SET_ELEM_LIST_SET_ID,
+	__NFTA_SET_ELEM_LIST_MAX
+};
+
 enum ws_nfqnl_attr_type {
 	WS_NFQA_UNSPEC              = 0,
 	WS_NFQA_PACKET_HDR          = 1,
@@ -445,6 +454,7 @@ static int ett_nfq_config_attr = -1;
 static int ett_nfq_attr = -1;
 static int ett_nft_attr = -1;
 static int ett_nft_set_elem_attr = -1;
+static int ett_nft_set_elem_list_attr = -1;
 static int ett_nfexp_attr = -1;
 static int ett_nfexp_flags_attr = -1;
 static int ett_nfexp_nat_attr = -1;
@@ -1714,6 +1724,38 @@ dissect_nft_set_elem_attrs(tvbuff_t *tvb, void *data _U_, struct packet_netlink_
 	return 0;
 }
 
+static const value_string netlink_netfilter_table_set_elem_list_type_vals[] = {
+	{ NFTA_SET_ELEM_LIST_TABLE, "table" },
+	{ NFTA_SET_ELEM_LIST_SET, "set" },
+	{ NFTA_SET_ELEM_LIST_ELEMENTS, "elements" },
+	{ NFTA_SET_ELEM_LIST_SET_ID, "set id" },
+	{ 0, NULL }
+};
+
+static header_field_info hfi_nft_set_elem_list_attr NETLINK_NETFILTER_HFI_INIT =
+	{ "Elements", "netlink-netfilter.nft.set_elem_list", FT_UINT16, BASE_DEC,
+	   VALS(netlink_netfilter_table_set_elem_list_type_vals), NLA_TYPE_MASK, NULL, HFILL };
+
+static int
+dissect_nft_set_elem_list_attrs(tvbuff_t *tvb, void *data _U_, struct packet_netlink_data *nl_data, proto_tree *tree, int nla_type, int offset, int len)
+{
+	enum nft_chain_attributes type = (enum nft_chain_attributes) nla_type;
+	netlink_netfilter_info_t *info = (netlink_netfilter_info_t *) data;
+
+	switch (type) {
+		case NFTA_SET_ELEM_LIST_TABLE:
+		case NFTA_SET_ELEM_LIST_SET:
+			break;
+		case NFTA_SET_ELEM_LIST_ELEMENTS:
+			return dissect_netlink_attributes(tvb, &hfi_nft_set_elem_attr, ett_nft_set_elem_attr, info, nl_data, tree, offset, len, dissect_nft_set_elem_attrs);
+		case NFTA_SET_ELEM_LIST_SET_ID:
+			break;
+		default:
+			break;
+	}
+	return 0;
+}
+
 static int
 dissect_netfilter_nft(tvbuff_t *tvb, netlink_netfilter_info_t *info, struct packet_netlink_data *nl_data, proto_tree *tree, int offset)
 {
@@ -1729,7 +1771,7 @@ dissect_netfilter_nft(tvbuff_t *tvb, netlink_netfilter_info_t *info, struct pack
 		case NFT_MSG_NEWSETELEM:
 		case NFT_MSG_GETSETELEM:
 		case NFT_MSG_DELSETELEM:
-			return dissect_netlink_attributes_to_end(tvb, &hfi_nft_set_elem_attr, ett_nft_set_elem_attr, info, nl_data, tree, offset, dissect_nft_set_elem_attrs);
+			return dissect_netlink_attributes_to_end(tvb, &hfi_nft_set_elem_list_attr, ett_nft_set_elem_list_attr, info, nl_data, tree, offset, dissect_nft_set_elem_list_attrs);
 
 		default:
 			/* TODO */
@@ -2330,6 +2372,7 @@ proto_register_netlink_netfilter(void)
 		&hfi_nft_chain_attr_id,
 		&hfi_nft_chain_attr_userdata,
 		&hfi_nft_set_elem_attr,
+		&hfi_nft_set_elem_list_attr,
 	/* ULOG */
 		&hfi_netlink_netfilter_ulog_type,
 	/* IPSET */
@@ -2364,6 +2407,7 @@ proto_register_netlink_netfilter(void)
 		&ett_nfq_attr,
 		&ett_nft_attr,
 		&ett_nft_set_elem_attr,
+		&ett_nft_set_elem_list_attr,
 		&ett_nfexp_attr,
 		&ett_nfexp_flags_attr,
 		&ett_nfexp_nat_attr,
