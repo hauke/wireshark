@@ -239,6 +239,13 @@ enum nft_rule_attributes {
 	__NFTA_RULE_MAX
 };
 
+enum nft_expr_attributes {
+	NFTA_EXPR_UNSPEC,
+	NFTA_EXPR_NAME,
+	NFTA_EXPR_DATA,
+	__NFTA_EXPR_MAX
+};
+
 enum ws_nfqnl_attr_type {
 	WS_NFQA_UNSPEC              = 0,
 	WS_NFQA_PACKET_HDR          = 1,
@@ -489,6 +496,7 @@ static int ett_nft_set_elem_list_attr = -1;
 static int ett_nft_data_attr = -1;
 static int ett_nft_verdict_attr = -1;
 static int ett_nft_rule_attr = -1;
+static int ett_nft_expr_attr = -1;
 static int ett_nfexp_attr = -1;
 static int ett_nfexp_flags_attr = -1;
 static int ett_nfexp_nat_attr = -1;
@@ -1850,9 +1858,9 @@ dissect_nft_set_elem_list_attrs(tvbuff_t *tvb, void *data _U_, struct packet_net
 }
 
 static int
-dissect_nft_rule_attrs(tvbuff_t *tvb, void *data _U_, struct packet_netlink_data *nl_data, proto_tree *tree, int nla_type, int offset, int len)
+dissect_nft_expr_attrs(tvbuff_t *tvb, void *data _U_, struct packet_netlink_data *nl_data, proto_tree *tree, int nla_type, int offset, int len)
 {
-	enum nft_rule_attributes type = (enum nft_rule_attributes) nla_type;
+	enum nft_expr_attributes type = (enum nft_expr_attributes) nla_type;
 
 	(void)tvb;
 	(void)data;
@@ -1862,11 +1870,38 @@ dissect_nft_rule_attrs(tvbuff_t *tvb, void *data _U_, struct packet_netlink_data
 	(void)len;
 
 	switch (type) {
-		case NFTA_RULE_UNSPEC:
+		case NFTA_EXPR_NAME:
+		case NFTA_EXPR_DATA:
+			break;
+		default:
+			break;
+	}
+	return 0;
+}
+
+static const value_string netlink_netfilter_table_expr_type_vals[] = {
+	{ NFTA_EXPR_NAME, "name" },
+	{ NFTA_EXPR_DATA, "data" },
+	{ 0, NULL }
+};
+
+static header_field_info hfi_nft_expt_attr NETLINK_NETFILTER_HFI_INIT =
+	{ "Expr", "netlink-netfilter.nft.expr", FT_UINT16, BASE_DEC,
+	   VALS(netlink_netfilter_table_expr_type_vals), NLA_TYPE_MASK, NULL, HFILL };
+
+static int
+dissect_nft_rule_attrs(tvbuff_t *tvb, void *data _U_, struct packet_netlink_data *nl_data, proto_tree *tree, int nla_type, int offset, int len)
+{
+	enum nft_rule_attributes type = (enum nft_rule_attributes) nla_type;
+	netlink_netfilter_info_t *info = (netlink_netfilter_info_t *) data;
+
+	switch (type) {
 		case NFTA_RULE_TABLE:
 		case NFTA_RULE_CHAIN:
 		case NFTA_RULE_HANDLE:
+			break;
 		case NFTA_RULE_EXPRESSIONS:
+			return dissect_netlink_attributes(tvb, &hfi_nft_expt_attr, ett_nft_expr_attr, info, nl_data, tree, offset, len, dissect_nft_expr_attrs);
 		case NFTA_RULE_COMPAT:
 		case NFTA_RULE_POSITION:
 		case NFTA_RULE_USERDATA:
@@ -2522,6 +2557,7 @@ proto_register_netlink_netfilter(void)
 		&hfi_nft_set_elem_key_attr,
 		&hfi_nft_set_data_verdict_attr,
 		&hfi_nft_rule_attr,
+		&hfi_nft_expt_attr,
 	/* ULOG */
 		&hfi_netlink_netfilter_ulog_type,
 	/* IPSET */
@@ -2560,6 +2596,7 @@ proto_register_netlink_netfilter(void)
 		&ett_nft_data_attr,
 		&ett_nft_verdict_attr,
 		&ett_nft_rule_attr,
+		&ett_nft_expr_attr,
 		&ett_nfexp_attr,
 		&ett_nfexp_flags_attr,
 		&ett_nfexp_nat_attr,
